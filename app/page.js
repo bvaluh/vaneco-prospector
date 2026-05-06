@@ -1,7 +1,10 @@
 'use client';
-import { useAuth, RedirectToSignIn } from '@clerk/nextjs';
-
 import { useState, useRef } from 'react';
+
+const VALID_USERS = [
+  { email: 'bane@vanecoinc.com', password: 'vaneco2024' },
+];
+
 
 // ── Score ring SVG ──────────────────────────────────────────────
 function ScoreRing({ score, label, color }) {
@@ -162,8 +165,11 @@ function BriefBox({ children, italic }) {
 
 // ── Main App ────────────────────────────────────────────────────
 export default function Home() {
-  const { isSignedIn, isLoaded } = useAuth();
-  const [screen, setScreen] = useState('setup');
+const [authed, setAuthed] = useState(false);
+const [loginEmail, setLoginEmail] = useState('');
+const [loginPassword, setLoginPassword] = useState('');
+const [loginErr, setLoginErr] = useState('');
+    const [screen, setScreen] = useState('setup');
   const [icp, setIcp] = useState({});
   const [prospects, setProspects] = useState([]);
   const [filter, setFilter] = useState('All');
@@ -178,13 +184,35 @@ export default function Home() {
   const signalsRef = useRef();
   const companiesRef = useRef();
 
-  if (!isLoaded) return null;
-if (!isSignedIn) return null;
+
 
   // ── Step 1 → 2 ──
   function goToStep2() {
     const product = productRef.current?.value.trim();
-    if (!product) { setSetupErr('Please describe what you sell.'); return; }
+    if (!product) { setSetupErr('Please describe what you sell.');if (!authed) return (
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ background: 'var(--bg2)', border: '0.5px solid var(--border)', borderRadius: 'var(--radius)', padding: '32px', width: 360 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--amber)' }} />
+        <span style={{ fontWeight: 700, fontSize: 14 }}>Vaneco Prospector</span>
+      </div>
+      <div className="field">
+        <label>Email</label>
+        <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="your@email.com" />
+      </div>
+      <div className="field">
+        <label>Password</label>
+        <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" />
+      </div>
+      {loginErr && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>{loginErr}</div>}
+      <button style={{ width: '100%' }} onClick={() => {
+        const user = VALID_USERS.find(u => u.email === loginEmail && u.password === loginPassword);
+        if (user) { setAuthed(true); setLoginErr(''); }
+        else setLoginErr('Invalid email or password.');
+      }}>Sign in</button>
+    </div>
+  </div>
+); return; }
     setSetupErr('');
     setIcp({
       product,

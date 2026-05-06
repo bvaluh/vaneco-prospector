@@ -1,4 +1,5 @@
 'use client';
+import { useAuth, RedirectToSignIn } from '@clerk/nextjs';
 
 import { useState, useRef } from 'react';
 
@@ -161,13 +162,14 @@ function BriefBox({ children, italic }) {
 
 // ── Main App ────────────────────────────────────────────────────
 export default function Home() {
-  const [screen, setScreen] = useState('setup'); // setup | prospects | scoring | results
+  const { isSignedIn, isLoaded } = useAuth();
+  const [screen, setScreen] = useState('setup');
   const [icp, setIcp] = useState({});
   const [prospects, setProspects] = useState([]);
   const [filter, setFilter] = useState('All');
   const [progress, setProgress] = useState(0);
-
-  // ICP form refs
+  const [setupErr, setSetupErr] = useState('');
+  const [prospectErr, setProspectErr] = useState('');
   const productRef = useRef();
   const industryRef = useRef();
   const geoRef = useRef();
@@ -176,8 +178,8 @@ export default function Home() {
   const signalsRef = useRef();
   const companiesRef = useRef();
 
-  const [setupErr, setSetupErr] = useState('');
-  const [prospectErr, setProspectErr] = useState('');
+  if (!isLoaded) return null;
+if (!isSignedIn) return null;
 
   // ── Step 1 → 2 ──
   function goToStep2() {

@@ -1,0 +1,100 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a0b;
+  --bg2: #111113;
+  --bg3: #1a1a1e;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0eff0;
+  --text2: #9998a0;
+  --text3: #5a5960;
+  --amber: #e0eb51;
+  --amber-dim: rgba(224,235,81,0.15);
+  --green: #3db87a;
+  --green-dim: rgba(61,184,122,0.12);
+  --yellow: #d4a017;
+  --yellow-dim: rgba(212,160,23,0.12);
+  --red: #e05252;
+  --red-dim: rgba(224,82,82,0.12);
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, textarea, select {
+  width: 100%;
+  background: var(--bg3);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+  resize: vertical;
+}
+
+input:focus, textarea:focus {
+  border-color: var(--amber);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text3);
+}
+
+button {
+  background: var(--amber);
+  color: #0a0a0b;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+button:hover { opacity: 0.88; }
+button:active { transform: scale(0.98); }
+
+button.ghost {
+  background: transparent;
+  color: var(--text2);
+  border: 0.5px solid var(--border2);
+  font-weight: 400;
+}
+
+button.ghost:hover {
+  background: var(--bg3);
+  opacity: 1;
+}
+
+button.ghost.active {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 5px;
+}
+
+.field { margin-bottom: 16px; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

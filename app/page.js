@@ -1,9 +1,6 @@
 'use client';
 import { useState, useRef } from 'react';
 
-const VALID_USERS = [
-  { email: 'bane@vanecoinc.com', password: 'vaneco2024' },
-];
 
 
 // ── Score ring SVG ──────────────────────────────────────────────

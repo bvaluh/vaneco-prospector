@@ -11,7 +11,7 @@ export async function POST(req) {
     }
 
     const msg = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 1000,
       messages: [{ role: 'user', content: buildPrompt(company, icp) }],
     });
@@ -35,6 +35,8 @@ Target industry: ${icp.industry}
 Company size: ${icp.sizeMin}–${icp.sizeMax} employees
 Geography: ${icp.geography}
 Key buying signals: ${icp.signals}
+CRITICAL SCORING RULE — GEOGRAPHY:
+If the prospect company primarily operates outside the seller's target geography ("${icp.geography}"), the composite_score and readiness_score MUST be below 40, regardless of industry or size fit. Geography is a hard filter, not a soft signal. State this clearly in icp_fit_reasons if geography is a mismatch.
 
 PROSPECT: ${company}
 

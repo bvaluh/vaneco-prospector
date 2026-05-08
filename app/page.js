@@ -62,8 +62,7 @@ function BriefBox({ children, italic }) {
   );
 }
 
-function ProspectCard({ prospect }) {
-  const [open, setOpen] = useState(false);
+function ProspectCard({ prospect, onSequenceGenerated }) {  const [open, setOpen] = useState(false);
   const [seq, setSeq] = useState(null);
   const [seqLoading, setSeqLoading] = useState(false);
   const d = prospect.data;
@@ -145,7 +144,8 @@ function ProspectCard({ prospect }) {
                     body: JSON.stringify({ company: prospect.name, icp: prospect.icp, scoring: d }),
                   });
                   const data = await res.json();
-                  setSeq(data);
+setSeq(data);
+if (onSequenceGenerated) onSequenceGenerated(prospect.name, data);
                 } catch { setSeq({ error: true }); }
                 setSeqLoading(false);
               }}
@@ -232,12 +232,13 @@ export default function Home() {
 
   function exportCSV() {
     const done = prospects.filter(p => p.status === 'done');
-    const headers = ['Company', 'Tier', 'Score', 'Readiness', 'Opportunity', 'Summary', 'Signals', 'Recommended Action', 'Opening Line', 'Talking Points', 'Objections'];
-    const rows = done.map(p => [
-      p.name, p.data.tier, p.data.composite_score, p.data.readiness_score, p.data.opportunity_score,
-      p.data.company_summary, (p.data.key_signals || []).join(' | '), p.data.recommended_action,
-      p.data.outreach_opening, (p.data.talking_points || []).join(' | '), (p.data.potential_objections || []).join(' | '),
-    ].map(v => `"${String(v).replace(/"/g, '""')}"`));
+    const headers = ['Company', 'Tier', 'Score', 'Readiness', 'Opportunity', 'Summary', 'Signals', 'Recommended Action', 'Opening Line', 'Talking Points', 'Objections', 'Email Subject', 'Email 1 - Opener', 'Email 2 - Value', 'Email 3 - Soft Close'];
+const rows = done.map(p => [
+  p.name, p.data.tier, p.data.composite_score, p.data.readiness_score, p.data.opportunity_score,
+  p.data.company_summary, (p.data.key_signals || []).join(' | '), p.data.recommended_action,
+  p.data.outreach_opening, (p.data.talking_points || []).join(' | '), (p.data.potential_objections || []).join(' | '),
+  p.sequence?.subject || '', p.sequence?.email1?.body || '', p.sequence?.email2?.body || '', p.sequence?.email3?.body || '',
+].map(v => `"${String(v).replace(/"/g, '""')}"`));
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -448,7 +449,9 @@ export default function Home() {
             <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10 }}>
               Click any row to expand the full report — signals, talking points, objections, and outreach.
             </div>
-
+<div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 16, padding: '8px 12px', border: '0.5px solid var(--border)', borderRadius: 'var(--radius-sm)', lineHeight: 1.6 }}>
+  ⚠ Scores are AI-generated based on publicly available training data and may not reflect current company details. Always verify location, size, and status before outreach. Use as a prioritization guide, not a definitive assessment.
+</div>
             <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
               {['All', 'High', 'Medium', 'Low'].map(f => (
                 <button key={f} className={`ghost ${filter === f ? 'active' : ''}`} style={{ fontSize: 12, padding: '5px 14px' }} onClick={() => setFilter(f)}>
@@ -459,7 +462,9 @@ export default function Home() {
 
             {filtered.length === 0
               ? <div style={{ color: 'var(--text3)', fontSize: 13, padding: '20px 0' }}>No prospects in this tier.</div>
-              : filtered.map((p) => <ProspectCard key={p.name} prospect={{ ...p, icp }} />)
+              : filtered.map((p) => <ProspectCard key={p.name} prospect={{ ...p, icp }} onSequenceGenerated={(name, seq) => {
+  setProspects(prev => prev.map(pr => pr.name === name ? { ...pr, sequence: seq } : pr));
+}} />)
             }
             {prospects.filter(p => p.status === 'error').map((p, i) => (
               <div key={i} style={{ background: 'var(--bg2)', border: '0.5px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: 8, color: 'var(--text3)', fontSize: 13 }}>

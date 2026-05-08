@@ -398,7 +398,7 @@ useEffect(() => {
             </div>
             {filtered.length === 0
               ? <div style={{ color: 'var(--text3)', fontSize: 13, padding: '20px 0' }}>No prospects in this tier.</div>
-              : filtered.map((p, i) => <ProspectCard key={i} prospect={{ ...p, icp }} />)
+              : filtered.map((p) => <ProspectCard key={p.name} prospect={{ ...p, icp }} />)
             }
             {prospects.filter(p => p.status === 'error').map((p, i) => (
               <div key={i} style={{ background: 'var(--bg2)', border: '0.5px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px 16px', marginBottom: 8, color: 'var(--text3)', fontSize: 13 }}>

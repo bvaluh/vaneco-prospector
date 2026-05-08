@@ -1,31 +1,24 @@
 import Anthropic from '@anthropic-ai/sdk';
-
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 export async function POST(req) {
   try {
     const { company, icp } = await req.json();
-
     if (!company || !icp) {
       return Response.json({ error: 'Missing company or ICP' }, { status: 400 });
     }
-
     const msg = await client.messages.create({
       model: 'claude-sonnet-4-5',
       max_tokens: 1000,
       messages: [{ role: 'user', content: buildPrompt(company, icp) }],
     });
-
     const text = msg.content[0].text;
     const data = JSON.parse(text.replace(/```json|```/g, '').trim());
-
     return Response.json(data);
   } catch (err) {
     console.error('Score error:', err);
     return Response.json({ error: 'Scoring failed' }, { status: 500 });
   }
 }
-
 function buildPrompt(company, icp) {
   return `You are a B2B sales intelligence engine. Analyze this prospect company against the seller's ICP.
 
@@ -35,12 +28,24 @@ Target industry: ${icp.industry}
 Company size: ${icp.sizeMin}–${icp.sizeMax} employees
 Geography: ${icp.geography}
 Key buying signals: ${icp.signals}
-CRITICAL SCORING RULE — GEOGRAPHY:
-If the prospect company primarily operates outside the seller's target geography ("${icp.geography}"), the composite_score and readiness_score MUST be below 40, regardless of industry or size fit. Geography is a hard filter, not a soft signal. State this clearly in icp_fit_reasons if geography is a mismatch.
+
+SCORING NOTES:
+- readiness_score reflects how ready the prospect is to buy NOW, based on the buying signals listed above. Geography does NOT factor into readiness.
+- opportunity_score reflects fit (industry, size, geography). See geography rule below.
+- composite_score is the overall priority blend of readiness and opportunity.
+
+GEOGRAPHY RULE (applies to opportunity_score and composite_score):
+The prospect must have meaningful business presence in the seller's target geography ("${icp.geography}"). Presence is defined broadly: headquarters, regional offices, significant operations, active customer base, employees, hiring activity, or documented commercial activity in the target region all count.
+
+- If the prospect has clear presence in the target geography → geography is neutral/positive, score normally on industry and size fit.
+- If the prospect has NO meaningful presence in the target geography → opportunity_score MUST be below 40 AND composite_score MUST be below 40, regardless of industry or size fit. State the geographic mismatch clearly in icp_fit_reasons.
+
+Important: Do not penalize a company based on HQ location alone if it has real business activity in the target geography. A company headquartered in Paris with a US sales office and US customers HAS US presence.
 
 PROSPECT: ${company}
 
 Use your knowledge of this company. If you don't know it well, make a reasonable inference based on the name/domain.
+
 Return ONLY a valid JSON object, no markdown, no backticks, no preamble. Use this exact schema:
 {
   "readiness_score": <0-100>,

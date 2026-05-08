@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-
 import { createClient } from '../lib/supabase';
+
 function ScoreRing({ score, label, color }) {
   const r = 20;
   const circ = 2 * Math.PI * r;
@@ -82,6 +82,7 @@ function ProspectCard({ prospect }) {
 
   return (
     <div style={{ background: 'var(--bg2)', border: '0.5px solid var(--border)', borderRadius: 'var(--radius)', marginBottom: 8, overflow: 'hidden' }}>
+      {/* Header row */}
       <div onClick={() => setOpen(!open)}
         style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', cursor: 'pointer', transition: 'background 0.15s' }}
         onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
@@ -98,10 +99,14 @@ function ProspectCard({ prospect }) {
             <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Score</div>
           </div>
           <TierBadge tier={d.tier} />
-          <span style={{ color: 'var(--text3)', fontSize: 12 }}>{open ? '▲' : '▼'}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <span style={{ color: 'var(--amber)', fontSize: 14 }}>{open ? '▲' : '▼'}</span>
+            <span style={{ fontSize: 9, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{open ? 'collapse' : 'full report'}</span>
+          </div>
         </div>
       </div>
 
+      {/* Expanded body */}
       {open && (
         <div style={{ borderTop: '0.5px solid var(--border)', padding: '16px 18px' }}>
           <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.7, marginBottom: 14 }}>{d.company_summary}</p>
@@ -128,6 +133,7 @@ function ProspectCard({ prospect }) {
             {(d.potential_objections || []).map((o, i) => <Chip key={i} text={o} />)}
           </div>
 
+          {/* Email sequence */}
           <div style={{ marginTop: 20, borderTop: '0.5px solid var(--border)', paddingTop: 16 }}>
             <button className="ghost" style={{ fontSize: 12, padding: '6px 14px', marginBottom: 12 }}
               onClick={async () => {
@@ -186,27 +192,30 @@ export default function Home() {
   const signalsRef = useRef();
   const companiesRef = useRef();
 
-useEffect(() => {
-  const supabase = createClient();
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    if (!session) window.location.href = '/login';
-  });
-}, []);
+  // Auth check
   useEffect(() => {
-  if (screen !== 'setup') return;
-  const saved = localStorage.getItem('vaneco_icp');
-  if (saved) {
-    const s = JSON.parse(saved);
-    setTimeout(() => {
-      if (productRef.current) productRef.current.value = s.product || '';
-      if (industryRef.current) industryRef.current.value = s.industry || '';
-      if (geoRef.current) geoRef.current.value = s.geography || '';
-      if (sizeMinRef.current) sizeMinRef.current.value = s.sizeMin || '';
-      if (sizeMaxRef.current) sizeMaxRef.current.value = s.sizeMax || '';
-      if (signalsRef.current) signalsRef.current.value = s.signals || '';
-    }, 50);
-  }
-}, [screen]);
+    const supabase = createClient();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) window.location.href = '/login';
+    });
+  }, []);
+
+  // Load saved ICP
+  useEffect(() => {
+    if (screen !== 'setup') return;
+    const saved = localStorage.getItem('vaneco_icp');
+    if (saved) {
+      const s = JSON.parse(saved);
+      setTimeout(() => {
+        if (productRef.current) productRef.current.value = s.product || '';
+        if (industryRef.current) industryRef.current.value = s.industry || '';
+        if (geoRef.current) geoRef.current.value = s.geography || '';
+        if (sizeMinRef.current) sizeMinRef.current.value = s.sizeMin || '';
+        if (sizeMaxRef.current) sizeMaxRef.current.value = s.sizeMax || '';
+        if (signalsRef.current) signalsRef.current.value = s.signals || '';
+      }, 50);
+    }
+  }, [screen]);
 
   function saveICP() {
     const data = {
@@ -252,11 +261,20 @@ useEffect(() => {
     setScreen('prospects');
   }
 
+  // Parse companies — supports both newline and comma separated
+  function parseCompanies(raw) {
+    return raw
+      .split(/[\n,]+/)
+      .map(s => s.trim())
+      .filter(Boolean)
+      .slice(0, 15);
+  }
+
   async function startScoring() {
     const raw = companiesRef.current?.value.trim();
     if (!raw) { setProspectErr('Please enter at least one company.'); return; }
     setProspectErr('');
-    const names = raw.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 15);
+    const names = parseCompanies(raw);
     const initial = names.map(name => ({ name, status: 'pending', data: null }));
     setProspects(initial);
     setProgress(0);
@@ -290,35 +308,57 @@ useEffect(() => {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ borderBottom: '0.5px solid var(--border)', padding: '14px 24px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--amber)' }} />
-        <span style={{ fontWeight: 700, fontSize: 14 }}>Vaneco Prospector</span>
+      {/* Header */}
+      <div style={{ borderBottom: '0.5px solid var(--border)', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--amber)' }} />
+          <span style={{ fontWeight: 700, fontSize: 14 }}>Vaneco Prospector</span>
+        </div>
+        <button className="ghost" style={{ fontSize: 12, padding: '5px 12px' }} onClick={async () => {
+          const supabase = createClient();
+          await supabase.auth.signOut();
+          window.location.href = '/login';
+        }}>Sign out</button>
       </div>
 
       <div style={{ flex: 1, maxWidth: 720, width: '100%', margin: '0 auto', padding: '32px 24px' }}>
 
+        {/* ── SETUP ── */}
         {screen === 'setup' && (
           <div>
             <div style={{ marginBottom: 28 }}>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 6 }}>Step 1 of 2 — ICP Configuration</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Define your ideal customer</div>
-              <div style={{ fontSize: 13, color: 'var(--text2)' }}>The more specific, the sharper the scoring.</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 12 }}>The more specific, the sharper the scoring.</div>
+              <div style={{ background: 'rgba(224,235,81,0.06)', border: '0.5px solid rgba(224,235,81,0.25)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--amber)', marginBottom: 6 }}>⚠ The #1 mistake — being too vague</div>
+                <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.7 }}>
+                  Don't write <em style={{ color: 'var(--text3)' }}>"marketing services"</em> or <em style={{ color: 'var(--text3)' }}>"SEO"</em> — that describes half the internet.<br />
+                  Instead write <em style={{ color: 'var(--white)' }}>"SEO for e-commerce brands doing $1M–$10M revenue that rely on organic traffic but have never done technical SEO."</em><br />
+                  The more specific your problem statement, the more accurate the scoring.
+                </div>
+              </div>
             </div>
+
             <div className="field">
-              <label>What do you sell? <span style={{ color: 'var(--red)' }}>*</span></label>
-              <textarea ref={productRef} rows={3} placeholder="e.g. Revenue operations software that helps B2B SaaS companies shorten their sales cycle..." />
+              <label>What do you sell — be specific about the problem you solve <span style={{ color: 'var(--red)' }}>*</span></label>
+              <textarea ref={productRef} rows={4} placeholder="e.g. We help B2B SaaS companies with 10-50 sales reps that are missing quota because their reps don't know which leads to prioritize. We build a repeatable qualification process so founders can step out of every deal." />
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div className="field"><label>Target industry / vertical</label><input ref={industryRef} placeholder="e.g. B2B SaaS, FinTech..." /></div>
+              <div className="field"><label>Target industry / vertical</label><input ref={industryRef} placeholder="e.g. B2B SaaS, FinTech, Manufacturing…" /></div>
               <div className="field"><label>Target geography</label><input ref={geoRef} placeholder="e.g. US, DACH, CEE…" /></div>
               <div className="field"><label>Company size — min employees</label><input ref={sizeMinRef} type="number" placeholder="10" /></div>
               <div className="field"><label>Company size — max employees</label><input ref={sizeMaxRef} type="number" placeholder="500" /></div>
             </div>
+
             <div className="field">
-              <label>Key buying signals</label>
-              <textarea ref={signalsRef} rows={2} placeholder="e.g. Recent Series A/B funding, hiring Sales roles, using Salesforce..." />
+              <label>Key buying signals — what tells you they need you right now?</label>
+              <textarea ref={signalsRef} rows={2} placeholder="e.g. Hiring first SDR, recent Series A, founder still on every sales call, missing quota 2 quarters in a row…" />
             </div>
+
             {setupErr && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>{setupErr}</div>}
+
             <div style={{ display: 'flex', gap: 8 }}>
               <button style={{ flex: 1, padding: '12px', fontSize: 14 }} onClick={goToStep2}>Continue — Add prospects →</button>
               <button className="ghost" style={{ padding: '12px 16px', fontSize: 13 }} onClick={saveICP}>Save ICP</button>
@@ -326,23 +366,36 @@ useEffect(() => {
           </div>
         )}
 
+        {/* ── PROSPECTS ── */}
         {screen === 'prospects' && (
           <div>
-            <button className="ghost" style={{ marginBottom: 24, padding: '6px 12px', fontSize: 12 }} onClick={() => setScreen('setup')}>← Back</button>
+            <button
+              className="ghost"
+              style={{ marginBottom: 24, padding: '8px 16px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6, border: '0.5px solid var(--amber)', color: 'var(--amber)' }}
+              onClick={() => setScreen('setup')}>
+              ← Back to ICP
+            </button>
             <div style={{ marginBottom: 28 }}>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text3)', textTransform: 'uppercase', marginBottom: 6 }}>Step 2 of 2 — Prospects</div>
               <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Add companies to score</div>
-              <div style={{ fontSize: 13, color: 'var(--text2)' }}>One company name or domain per line. Up to 15.</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 4 }}>Up to 15 companies. AI will score each against your ICP.</div>
+              <div style={{ background: 'rgba(224,235,81,0.06)', border: '0.5px solid rgba(224,235,81,0.25)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: 12, color: 'var(--text2)', lineHeight: 1.7 }}>
+                Enter <strong style={{ color: 'var(--white)' }}>one company per line</strong> or separate with commas. Use company name or domain.<br />
+                <span style={{ color: 'var(--text3)' }}>e.g. one per line: Stripe / acme.com / Notion — or comma separated: Stripe, acme.com, Notion</span>
+              </div>
             </div>
+
             <div className="field">
               <label>Company names or domains</label>
               <textarea ref={companiesRef} rows={10} placeholder={'Stripe\nacme.com\nNotion\nLinear\nIntercom\nFigma'} />
             </div>
+
             {prospectErr && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>{prospectErr}</div>}
             <button style={{ width: '100%', padding: '12px', fontSize: 14 }} onClick={startScoring}>Score with AI →</button>
           </div>
         )}
 
+        {/* ── SCORING ── */}
         {screen === 'scoring' && (
           <div>
             <div style={{ marginBottom: 20 }}>
@@ -372,6 +425,7 @@ useEffect(() => {
           </div>
         )}
 
+        {/* ── RESULTS ── */}
         {screen === 'results' && (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -381,6 +435,7 @@ useEffect(() => {
                 <button className="ghost" style={{ fontSize: 12, padding: '6px 12px' }} onClick={() => { setScreen('prospects'); setProspects([]); }}>New search</button>
               </div>
             </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
               {[['Scored', done.length], ['High fit', highCount], ['Avg score', avgScore]].map(([label, val]) => (
                 <div key={label} style={{ background: 'var(--bg2)', border: '0.5px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 16px' }}>
@@ -389,6 +444,11 @@ useEffect(() => {
                 </div>
               ))}
             </div>
+
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10 }}>
+              Click any row to expand the full report — signals, talking points, objections, and outreach.
+            </div>
+
             <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
               {['All', 'High', 'Medium', 'Low'].map(f => (
                 <button key={f} className={`ghost ${filter === f ? 'active' : ''}`} style={{ fontSize: 12, padding: '5px 14px' }} onClick={() => setFilter(f)}>
@@ -396,6 +456,7 @@ useEffect(() => {
                 </button>
               ))}
             </div>
+
             {filtered.length === 0
               ? <div style={{ color: 'var(--text3)', fontSize: 13, padding: '20px 0' }}>No prospects in this tier.</div>
               : filtered.map((p) => <ProspectCard key={p.name} prospect={{ ...p, icp }} />)

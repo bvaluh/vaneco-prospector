@@ -455,9 +455,6 @@ const rows = done.map(p => [
             <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 10 }}>
               Click any row to expand the full report — signals, talking points, objections, and outreach.
             </div>
-<div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 16, padding: '8px 12px', border: '0.5px solid var(--border)', borderRadius: 'var(--radius-sm)', lineHeight: 1.6 }}>
-  ⚠ Scores are AI-generated based on publicly available training data and may not reflect current company details. Always verify location, size, and status before outreach. Use as a prioritization guide, not a definitive assessment.
-</div>
             <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
               {['All', 'High', 'Medium', 'Low'].map(f => (
                 <button key={f} className={`ghost ${filter === f ? 'active' : ''}`} style={{ fontSize: 12, padding: '5px 14px' }} onClick={() => setFilter(f)}>

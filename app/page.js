@@ -166,6 +166,9 @@ if (onSequenceGenerated) onSequenceGenerated(prospect.name, data);
                     <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{e.body}</div>
                   </div>
                 ))}
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 10, padding: '8px 12px', border: '0.5px solid var(--border)', borderRadius: 'var(--radius-sm)', lineHeight: 1.6 }}>
+                  ⚠ These emails are drafted based on company data only. Before sending, personalize with the buyer's name, title, and any recent activity (LinkedIn posts, podcast appearances, hiring announcements) to dramatically increase reply rates.
+                </div>
               </div>
             )}
             {seq?.error && <div style={{ fontSize: 12, color: 'var(--red)' }}>Failed to generate sequence.</div>}
@@ -276,29 +279,32 @@ const rows = done.map(p => [
     if (!raw) { setProspectErr('Please enter at least one company.'); return; }
     setProspectErr('');
     const names = parseCompanies(raw);
-    const initial = names.map(name => ({ name, status: 'pending', data: null }));
+    const initial = names.map(name => ({ name, status: 'scoring', data: null }));
     setProspects(initial);
     setProgress(0);
     setScreen('scoring');
-    const updated = [...initial];
-    for (let i = 0; i < updated.length; i++) {
-      updated[i] = { ...updated[i], status: 'scoring' };
-      setProspects([...updated]);
+
+    let completed = 0;
+    const results = [...initial];
+
+    await Promise.all(names.map(async (name, i) => {
       try {
         const res = await fetch('/api/score', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ company: updated[i].name, icp }),
+          body: JSON.stringify({ company: name, icp }),
         });
         const data = await res.json();
         if (data.error) throw new Error(data.error);
-        updated[i] = { ...updated[i], status: 'done', data };
+        results[i] = { ...results[i], status: 'done', data };
       } catch {
-        updated[i] = { ...updated[i], status: 'error' };
+        results[i] = { ...results[i], status: 'error' };
       }
-      setProgress(Math.round(((i + 1) / updated.length) * 100));
-      setProspects([...updated]);
-    }
+      completed++;
+      setProgress(Math.round((completed / names.length) * 100));
+      setProspects([...results]);
+    }));
+
     setTimeout(() => setScreen('results'), 500);
   }
 
@@ -401,7 +407,7 @@ const rows = done.map(p => [
           <div>
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>Scoring prospects…</div>
-              <div style={{ fontSize: 13, color: 'var(--text2)' }}>AI is analyzing each company against your ICP.</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>AI is analyzing all companies in parallel against your ICP.</div>
             </div>
             <div style={{ height: 3, background: 'var(--border)', borderRadius: 2, marginBottom: 24, overflow: 'hidden' }}>
               <div style={{ height: '100%', background: 'var(--amber)', width: `${progress}%`, borderRadius: 2, transition: 'width 0.4s ease' }} />

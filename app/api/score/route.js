@@ -8,7 +8,7 @@ export async function POST(req) {
     }
     const msg = await client.messages.create({
       model: 'claude-sonnet-4-5',
-      max_tokens: 2000,
+      max_tokens: 1200,
       tools: [{
         type: 'web_search_20250305',
         name: 'web_search',

@@ -286,8 +286,9 @@ const rows = done.map(p => [
 
     let completed = 0;
     const results = [...initial];
+    const CONCURRENCY = 5;
 
-    await Promise.all(names.map(async (name, i) => {
+    async function scoreOne(name, i) {
       try {
         const res = await fetch('/api/score', {
           method: 'POST',
@@ -303,7 +304,16 @@ const rows = done.map(p => [
       completed++;
       setProgress(Math.round((completed / names.length) * 100));
       setProspects([...results]);
-    }));
+    }
+
+    const queue = names.map((name, i) => ({ name, i }));
+    const workers = Array(Math.min(CONCURRENCY, queue.length)).fill(null).map(async () => {
+      while (queue.length > 0) {
+        const item = queue.shift();
+        if (item) await scoreOne(item.name, item.i);
+      }
+    });
+    await Promise.all(workers);
 
     setTimeout(() => setScreen('results'), 500);
   }

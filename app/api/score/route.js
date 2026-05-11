@@ -8,11 +8,24 @@ export async function POST(req) {
     }
     const msg = await client.messages.create({
       model: 'claude-sonnet-4-5',
-      max_tokens: 1000,
+      max_tokens: 2000,
+      tools: [{
+        type: 'web_search_20250305',
+        name: 'web_search',
+        max_uses: 2
+      }],
       messages: [{ role: 'user', content: buildPrompt(company, icp) }],
     });
-    const text = msg.content[0].text;
-    const data = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const textBlock = msg.content.filter(b => b.type === 'text').pop();
+    if (!textBlock) {
+      return Response.json({ error: 'No text response from AI' }, { status: 500 });
+    }
+    const text = textBlock.text;
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return Response.json({ error: 'No JSON found in response' }, { status: 500 });
+    }
+    const data = JSON.parse(jsonMatch[0]);
     return Response.json(data);
   } catch (err) {
     console.error('Score error:', err);
@@ -29,6 +42,9 @@ Company size: ${icp.sizeMin}–${icp.sizeMax} employees
 Geography: ${icp.geography}
 Key buying signals: ${icp.signals}
 
+INSTRUCTIONS:
+Use the web_search tool to research this company before scoring. Search for: company location/HQ, size, recent news, hiring, funding, or relevant buying signals. You have up to 2 searches — use them wisely. If web search returns no useful results, fall back to your training knowledge and lower your confidence in scoring.
+
 SCORING NOTES:
 - readiness_score reflects how ready the prospect is to buy NOW, based on the buying signals listed above. Geography does NOT factor into readiness.
 - opportunity_score reflects fit (industry, size, geography). See geography rule below.
@@ -43,8 +59,6 @@ The prospect must have meaningful business presence in the seller's target geogr
 Important: Do not penalize a company based on HQ location alone if it has real business activity in the target geography. A company headquartered in Paris with a US sales office and US customers HAS US presence.
 
 PROSPECT: ${company}
-
-Use your knowledge of this company. If you don't know it well, make a reasonable inference based on the name/domain.
 
 Return ONLY a valid JSON object, no markdown, no backticks, no preamble. Use this exact schema:
 {
